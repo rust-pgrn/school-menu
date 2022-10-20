@@ -1,26 +1,42 @@
-import type { Component } from 'solid-js';
-
-import logo from './logo.svg';
-import styles from './App.module.css';
+import { Component, createSignal, Show } from "solid-js";
+import { Admin } from "./Admin";
+import { User } from "./User";
 
 const App: Component = () => {
+  const [signedIn, setSignedIn] = createSignal(false);
+  const [user, setUser] = createSignal();
   return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-      </header>
-    </div>
+    <>
+      <Show
+        when={!signedIn()}
+        fallback={
+          <>
+            <Show when={user()} fallback={<Admin />}>
+              <User />
+            </Show>
+          </>
+        }
+      >
+        <div>
+          <button
+            onClick={() => {
+              setSignedIn(true);
+              setUser(false);
+            }}
+          >
+            Admin
+          </button>
+          <button
+            onClick={() => {
+              setSignedIn(true);
+              setUser(true);
+            }}
+          >
+            User
+          </button>
+        </div>
+      </Show>
+    </>
   );
 };
 
