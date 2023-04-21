@@ -3,7 +3,7 @@
 diesel::table! {
     menu (id) {
         id -> Int4,
-        date -> Date,
+        date -> Text,
         meal -> Text,
         students -> Array<Nullable<Text>>,
         price -> Money,
