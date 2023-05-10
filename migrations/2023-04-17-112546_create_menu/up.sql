@@ -3,5 +3,5 @@ CREATE TABLE menu (
 	date TEXT NOT NULL,
 	meal TEXT NOT NULL,
 	students TEXT[] NOT NULL,
-	price MONEY NOT NULL
+	price INTEGER NOT NULL
 )

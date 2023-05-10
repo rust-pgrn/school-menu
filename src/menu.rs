@@ -1,13 +1,9 @@
 use super::schema::menu;
-use diesel::pg::data_types::PgMoney;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::QueryResult;
 use dotenvy::dotenv;
-use rocket::execute;
-use rocket::serde::Serialize;
 use std::env;
-use time::Date;
 
 #[derive(Queryable, Debug, Clone)]
 pub struct Menu {
@@ -15,16 +11,27 @@ pub struct Menu {
     pub date: String,
     pub meal: String,
     pub students: Vec<Option<String>>,
-    pub price: PgMoney,
+    pub price: i32,
 }
 
-#[derive(Insertable)]
+#[derive(Debug, FromForm)]
+pub struct StudentMeal {
+    name: String,
+    meal_id: i32,
+    substitute: bool,
+}
+#[derive(Insertable, Debug, FromForm)]
 #[diesel(table_name = menu)]
 pub struct Meal {
     pub date: String,
     pub meal: String,
     pub students: Vec<Option<String>>,
-    pub price: PgMoney,
+    pub price: i32,
+}
+impl Meal {
+    pub fn empty(&self) -> bool {
+        self.meal.is_empty() && self.date.is_empty() && self.price.eq(&0)
+    }
 }
 
 fn establish_connection() -> PgConnection {
@@ -54,13 +61,20 @@ impl Menu {
             .get_result(connection)
             .expect("Error saving meal")
     }
-    pub fn add_student(student: String, id: i32, substitute: bool) {
-        //students.push(Some(student));
-        let menu = Menu::id(id);
-        let mut students = menu.students;
-        students.push(Some(format!("{student} {substitute}")));
+    pub fn insert_list(meals: Vec<Meal>) -> Vec<Menu> {
         let mut connection = &mut establish_connection();
-        diesel::update(menu::table.find(id))
+        diesel::insert_into(menu::table)
+            .values(meals)
+            .get_results(connection)
+            .expect("Error saving meal")
+    }
+    pub fn add_student(student: &StudentMeal) {
+        //students.push(Some(student));
+        let menu = Menu::id(student.meal_id);
+        let mut students = menu.students;
+        students.push(Some(format!("{} {}", student.name, student.substitute)));
+        let mut connection = &mut establish_connection();
+        diesel::update(menu::table.find(student.meal_id))
             .set(menu::students.eq(students))
             .execute(connection)
             .unwrap();

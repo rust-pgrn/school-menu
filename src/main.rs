@@ -1,27 +1,47 @@
+#[macro_use]
+extern crate rocket;
 mod menu;
 mod schema;
+use menu::StudentMeal;
+use rocket::form::Form;
+use std::fs;
+
 use diesel::pg::data_types::PgMoney;
 use menu::Meal;
 use menu::Menu;
-fn main() {
-    let meal = Meal {
-        date: "12/12/2023".to_string(),
-        meal: "Kofta".to_string(),
-        students: vec![None],
-        price: PgMoney(66),
-    };
-    //Menu::insert(meal);
-    //println!("{:?}", Menu::all().expect("Could not load menu"));
-    let meal = Meal {
-        date: "12/14/2023".to_string(),
-        meal: "Molokhia".to_string(),
-        students: vec![None],
-        price: PgMoney(50),
-    };
-    //Menu::insert(meal);
-    //println!("{:#?}", Menu::all().expect("Could not load menu"));
-    println!("{:?}", Menu::id(2));
-    Menu::add_student("Shams".to_string(), 1, false);
-    //println!("\n\n\n\n\n");
-    println!("{:#?}", Menu::all().expect("Could not load menu"));
+#[post("/", data = "<meal_form>")]
+fn add_meal(meal_form: Form<Meal>) -> String {
+    let meal = meal_form.into_inner();
+    if meal.empty() {
+        "Something is empty".to_string()
+    } else {
+        Menu::insert(meal);
+        "Menu Entered".to_string()
+    }
 }
+#[post("/", data = "<student_form>")]
+fn add_student(student_form: Form<StudentMeal>) -> String {
+    let student = student_form.into_inner();
+    Menu::add_student(&student);
+    "Meal added successfully".to_string()
+}
+#[get("/")]
+fn index() -> String {
+    "Hello".to_string()
+}
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/", routes![index]).mount(
+        "/menu",
+        routes![
+            add_student,
+            /*remove_student, menu, admin_menu,*/ add_meal
+        ],
+    )
+}
+//TODO
+//index function. have it link to front end
+//get meals for a student
+//post meals for student
+//get meal list in format for admin
+//get menu from admin

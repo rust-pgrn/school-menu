@@ -6,7 +6,7 @@ diesel::table! {
         date -> Text,
         meal -> Text,
         students -> Array<Nullable<Text>>,
-        price -> Money,
+        price -> Int4,
     }
 }
 
