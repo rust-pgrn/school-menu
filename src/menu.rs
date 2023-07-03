@@ -3,9 +3,10 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::QueryResult;
 use dotenvy::dotenv;
+use rocket::serde::Serialize;
 use std::env;
-
-#[derive(Queryable, Debug, Clone)]
+#[derive(Queryable, Debug, Clone, Serialize)]
+#[serde(crate = "rocket::serde")]
 pub struct Menu {
     pub id: i32,
     pub date: String,
@@ -47,6 +48,15 @@ impl Menu {
         let mut connection = &mut establish_connection();
         menu::table.load::<Menu>(connection)
     }
+    pub fn menu_for_student(student: StudentMeal) -> QueryResult<Vec<Menu>> {
+        let mut connection = &mut establish_connection();
+        Ok(menu::table
+            .load::<Menu>(connection)
+            .unwrap()
+            .into_iter()
+            .filter(|meal| meal.students.contains(&Some(student.name.to_string())))
+            .collect())
+    }
     pub fn id(meal_id: i32) -> Menu {
         let mut connection = &mut establish_connection();
         menu::table
@@ -78,5 +88,30 @@ impl Menu {
             .set(menu::students.eq(students))
             .execute(connection)
             .unwrap();
+    }
+    pub fn remove_student(student: &StudentMeal) {
+        let menu = Menu::id(student.meal_id);
+        let mut students = menu.students;
+        let students: Vec<Option<String>> = students
+            .into_iter()
+            .filter(|s| {
+                if let Some(name) = s {
+                    *name == student.name
+                } else {
+                    panic!("No student found to delete")
+                }
+            })
+            .collect();
+        let mut connection = &mut establish_connection();
+        diesel::update(menu::table.find(student.meal_id))
+            .set(menu::students.eq(students))
+            .execute(connection)
+            .unwrap();
+    }
+    pub fn delete_all() {
+        let mut connection = &mut establish_connection();
+        diesel::delete(menu::table)
+            .execute(connection)
+            .expect("Could not delete all");
     }
 }
